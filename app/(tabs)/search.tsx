@@ -34,7 +34,7 @@ import { hitKey, useAddTitle } from '../../src/hooks/useAddTitle';
 import { useDbQuery } from '../../src/hooks/useDbQuery';
 import { colors, radius, spacing } from '../../src/theme';
 
-const DEBOUNCE_MS = 350;
+const DEBOUNCE_MS = 200;
 
 type Mode = 'titles' | 'people' | 'genre';
 
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     color: colors.text,
-    fontSize: 15,
+    fontSize: 16, // under 16px, iOS Safari zooms in on focus
     padding: 0,
   },
   genreWrap: {

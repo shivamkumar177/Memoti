@@ -1,0 +1,28 @@
+{
+  "name": "memoti",
+  "main": "index.js",
+  "compatibility_date": "2026-10-01",
+  // The web app from `expo export --platform web`; only /api/* runs the Worker.
+  "assets": {
+    "directory": "../dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "memoti",
+      // From `wrangler d1 create memoti --location apac`.
+      "database_id": "0825e1ea-84ed-4491-ba3a-27847920b86e",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Sign-in attempts: 5 a minute per IP (per Cloudflare location).
+  "ratelimits": [
+    {
+      "name": "LOGIN_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ]
+}

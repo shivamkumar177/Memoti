@@ -1,5 +1,4 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { useDb } from '../../src/db/client';
 import { RatingPicker } from '../../src/components/RatingPicker';
 import { getTitle, logWatch, today } from '../../src/db/queries';
 import { useDbQuery } from '../../src/hooks/useDbQuery';
@@ -23,7 +23,7 @@ import { colors, radius, spacing } from '../../src/theme';
 export default function LogWatchScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const titleId = Number(params.id);
-  const db = useSQLiteContext();
+  const db = useDb();
   const router = useRouter();
 
   const [date, setDate] = useState(today());
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     color: colors.text,
-    fontSize: 15,
+    fontSize: 16, // under 16px, iOS Safari zooms in on focus
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },

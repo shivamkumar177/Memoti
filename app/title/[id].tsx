@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +21,7 @@ import {
   type Episode,
   type Season,
 } from '../../src/api/tmdb';
+import { useDb } from '../../src/db/client';
 import { Poster } from '../../src/components/Poster';
 import { RatingPicker } from '../../src/components/RatingPicker';
 import {
@@ -32,6 +32,7 @@ import {
   getWatchedEpisodeKeys,
   logEpisodes,
   logWatch,
+  setArchived,
   setUserRating,
   today,
   unlogEpisode,
@@ -50,7 +51,7 @@ import {
 export default function TitleDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const titleId = Number(params.id);
-  const db = useSQLiteContext();
+  const db = useDb();
   const router = useRouter();
 
   const { data, loading, error, reload } = useDbQuery(
@@ -72,6 +73,14 @@ export default function TitleDetailScreen() {
   const handleRating = useCallback(
     async (rating: number | null) => {
       await setUserRating(db, titleId, rating);
+      reload();
+    },
+    [db, titleId, reload]
+  );
+
+  const toggleArchived = useCallback(
+    async (archived: boolean) => {
+      await setArchived(db, titleId, archived);
       reload();
     },
     [db, titleId, reload]
@@ -239,6 +248,26 @@ export default function TitleDetailScreen() {
         />
       )}
 
+      {isTv && (
+        <Pressable
+          onPress={() => toggleArchived(!title.archived)}
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            styles.archiveButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons
+            name={title.archived ? 'play-outline' : 'pause-outline'}
+            size={16}
+            color={colors.text}
+          />
+          <Text style={styles.secondaryButtonText}>
+            {title.archived ? 'Resume watching' : 'Stop watching'}
+          </Text>
+        </Pressable>
+      )}
+
       <Pressable
         onPress={confirmDelete}
         style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
@@ -262,7 +291,7 @@ function MovieWatches({
   onLogged: () => void;
   onQuickLog: () => Promise<void>;
 }) {
-  const db = useSQLiteContext();
+  const db = useDb();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -352,7 +381,7 @@ function EpisodeTracker({
   watchedKeys: Set<string>;
   onChange: () => void;
 }) {
-  const db = useSQLiteContext();
+  const db = useDb();
   const [seasons, setSeasons] = useState<Season[] | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [episodes, setEpisodes] = useState<Episode[] | null>(null);
@@ -869,6 +898,10 @@ const styles = StyleSheet.create({
   episodeMeta: {
     color: colors.textFaint,
     fontSize: 11,
+  },
+  // secondaryButton is flex: 1 for button rows; standalone it must not stretch.
+  archiveButton: {
+    flex: 0,
   },
   deleteButton: {
     flexDirection: 'row',

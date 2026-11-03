@@ -20,6 +20,29 @@ export type Title = {
   review: string | null;
   reviewed_at: string | null;
   added_at: string;
+  /** Shows only: JSON `AirInfo` cached from TMDB, refreshed by the Home screen. */
+  air_info: string | null;
+  air_checked_at: string | null;
+  /** 1 when the user stopped watching; keeps the show off Home. */
+  archived: number;
+};
+
+/** An aired (or announced) episode position. */
+export type AirEpisode = {
+  s: number;
+  e: number;
+  date: string | null;
+  name: string | null;
+  runtime: number | null;
+};
+
+export type AirInfo = {
+  /** TMDB status, e.g. "Returning Series", "Ended". */
+  status: string | null;
+  /** Episode count per season, specials excluded. */
+  seasons: { n: number; count: number }[];
+  last: AirEpisode | null;
+  next: AirEpisode | null;
 };
 
 /**
@@ -54,6 +77,15 @@ export type TitleWithProgress = Title & {
  * the API, so they are not part of the insert shape — the columns default to
  * NULL and `upsertTitle` leaves them alone.
  */
-export type NewTitle = Omit<Title, 'id' | 'added_at' | 'review' | 'reviewed_at'>;
+export type NewTitle = Omit<
+  Title,
+  | 'id'
+  | 'added_at'
+  | 'review'
+  | 'reviewed_at'
+  | 'air_info'
+  | 'air_checked_at'
+  | 'archived'
+>;
 
 export type NewWatchEntry = Omit<WatchEntry, 'id' | 'created_at'>;

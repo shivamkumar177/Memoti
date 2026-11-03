@@ -1,9 +1,14 @@
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 
-import { getTitleDetails, TmdbError, type SearchHit } from '../api/tmdb';
-import { upsertTitle } from '../db/queries';
+import {
+  getShowAirInfo,
+  getTitleDetails,
+  TmdbError,
+  type SearchHit,
+} from '../api/tmdb';
+import { useDb } from '../db/client';
+import { findTitleByTmdbId, setAirInfo, upsertTitle } from '../db/queries';
 
 type Result = {
   /** Fetches full metadata, saves the title, then opens its detail screen. */
@@ -23,18 +28,34 @@ export function hitKey(hit: Pick<SearchHit, 'mediaType' | 'tmdbId'>): string {
  * the person credits screen so all three behave identically.
  */
 export function useAddTitle(): Result {
-  const db = useSQLiteContext();
+  const db = useDb();
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const add = useCallback(
     async (hit: SearchHit) => {
+      // Already saved: open it straight from the database and refresh the
+      // cached metadata in the background, instead of waiting on TMDB.
+      const existing = await findTitleByTmdbId(db, hit.tmdbId, hit.mediaType);
+      if (existing) {
+        router.push(`/title/${existing.id}`);
+        getTitleDetails(hit.tmdbId, hit.mediaType)
+          .then((details) => upsertTitle(db, details))
+          .catch(() => {});
+        return;
+      }
+
       const key = hitKey(hit);
       setPending(key);
       try {
         const details = await getTitleDetails(hit.tmdbId, hit.mediaType);
         const localId = await upsertTitle(db, details);
+        // Same /tv/{id} response from the request cache, so a new show lands
+        // on Home straight away instead of after the next refresh.
+        if (hit.mediaType === 'tv') {
+          await setAirInfo(db, localId, await getShowAirInfo(hit.tmdbId));
+        }
         router.push(`/title/${localId}`);
       } catch (e) {
         setError(

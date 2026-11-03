@@ -66,18 +66,18 @@ export default function StatsScreen() {
         <Tile
           icon="film-outline"
           label="Films"
-          value={String(stats.movies)}
+          value={stats.movies.toLocaleString()}
           sub={
             stats.movieWatches > stats.movies
               ? `${stats.movieWatches} watches`
               : undefined
           }
         />
-        <Tile icon="tv-outline" label="Shows" value={String(stats.shows)} />
+        <Tile icon="tv-outline" label="Shows" value={stats.shows.toLocaleString()} />
         <Tile
           icon="albums-outline"
           label="Episodes"
-          value={String(stats.episodes)}
+          value={stats.episodes.toLocaleString()}
         />
         <Tile
           icon="time-outline"

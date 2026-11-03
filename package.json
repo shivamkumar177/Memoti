@@ -4,12 +4,15 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
+    "@react-navigation/native": "^7.1.8",
     "babel-preset-expo": "~54.0.10",
-    "expo": "~54.0.0",
-    "expo-constants": "~18.0.13",
+    "expo": "~54.0.37",
+    "expo-constants": "~18.0.14",
+    "expo-font": "~14.0.12",
     "expo-image": "~3.0.11",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
+    "expo-secure-store": "~15.0.8",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
@@ -22,14 +25,19 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "wrangler": "^4.156.2"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "node --no-warnings scripts/check.mjs",
+    "api": "mkdir -p dist && wrangler dev --config worker/wrangler.jsonc --port 8787",
+    "db:migrations": "node --no-warnings scripts/d1-migrations.mjs && wrangler d1 migrations apply memoti --local --config worker/wrangler.jsonc",
+    "deploy": "expo export --platform web --clear && wrangler deploy --config worker/wrangler.jsonc"
   },
   "private": true
 }

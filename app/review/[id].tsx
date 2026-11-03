@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -14,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { useDb } from '../../src/db/client';
 import { RatingPicker } from '../../src/components/RatingPicker';
 import { getTitle, setReview, setUserRating } from '../../src/db/queries';
 import { useDbQuery } from '../../src/hooks/useDbQuery';
@@ -23,7 +23,7 @@ import { colors, formatDate, radius, spacing } from '../../src/theme';
 export default function ReviewScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const titleId = Number(params.id);
-  const db = useSQLiteContext();
+  const db = useDb();
   const router = useRouter();
 
   const [text, setText] = useState('');
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     color: colors.text,
-    fontSize: 15,
+    fontSize: 16, // under 16px, iOS Safari zooms in on focus
     lineHeight: 21,
     padding: spacing.md,
     minHeight: 160,

@@ -2,11 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import type { SearchHit } from '../api/tmdb';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, useIsWide } from '../theme';
 import { Poster } from './Poster';
 import { Tappable } from './Tappable';
 
-export const CARD_WIDTH = 104;
+/** Poster width for TitleCard: phone-sized by default, roomier on wide screens. */
+export function useCardWidth(): number {
+  return useIsWide() ? 150 : 104;
+}
 
 type Props = {
   hit: SearchHit;
@@ -17,12 +20,13 @@ type Props = {
 
 /** Poster tile for the horizontal Explore rows and person credit grids. */
 export function TitleCard({ hit, saved, busy, onPress }: Props) {
+  const width = useCardWidth();
   return (
-    <Tappable onPress={onPress} disabled={busy} style={styles.card}>
+    <Tappable onPress={onPress} disabled={busy} style={[styles.card, { width }]}>
       <View>
         <Poster
           path={hit.posterPath}
-          width={CARD_WIDTH}
+          width={width}
           mediaType={hit.mediaType}
           size="w342"
         />
@@ -48,7 +52,6 @@ export function TitleCard({ hit, saved, busy, onPress }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    width: CARD_WIDTH,
     gap: spacing.xs,
   },
   badge: {

@@ -18,11 +18,11 @@ import {
   type SearchHit,
 } from '../../src/api/tmdb';
 import { FadeIn } from '../../src/components/FadeIn';
-import { CARD_WIDTH, TitleCard } from '../../src/components/TitleCard';
+import { TitleCard, useCardWidth } from '../../src/components/TitleCard';
 import { getSavedTmdbIds } from '../../src/db/queries';
 import { hitKey, useAddTitle } from '../../src/hooks/useAddTitle';
 import { useDbQuery } from '../../src/hooks/useDbQuery';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, spacing, useIsWide } from '../../src/theme';
 
 const ROWS: FeedKind[] = [
   'trending',
@@ -38,6 +38,8 @@ export default function ExploreScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { add, pending, error: addError } = useAddTitle();
+  const cardWidth = useCardWidth();
+  const wide = useIsWide();
 
   // Saved set comes from the database and refreshes on focus, so returning from
   // a detail screen updates the check badges.
@@ -136,10 +138,11 @@ export default function ExploreScreen() {
               <Text style={styles.rowTitle}>{feedLabel(kind)}</Text>
               <ScrollView
                 horizontal
-                showsHorizontalScrollIndicator={false}
+                // A visible scrollbar is the only horizontal handle a mouse has.
+                showsHorizontalScrollIndicator={wide}
                 contentContainerStyle={styles.rowContent}
                 decelerationRate="fast"
-                snapToInterval={CARD_WIDTH + spacing.md}
+                snapToInterval={cardWidth + spacing.md}
                 snapToAlignment="start"
               >
                 {hits.map((hit) => {

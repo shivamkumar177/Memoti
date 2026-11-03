@@ -1,3 +1,12 @@
+import { useWindowDimensions } from 'react-native';
+
+/** Tablet/desktop layout from here up: sidebar nav, centered content column. */
+export function useIsWide(): boolean {
+  return useWindowDimensions().width >= 768;
+}
+
+export const MAX_CONTENT_WIDTH = 1080;
+
 /**
  * Single dark palette. The app is dark-only for now — poster art reads better
  * against it and it avoids threading a color scheme through every screen.

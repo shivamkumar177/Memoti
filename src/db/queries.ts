@@ -1,6 +1,7 @@
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { Db } from './client';
 
 import type {
+  AirInfo,
   MediaType,
   NewTitle,
   NewWatchEntry,
@@ -44,7 +45,7 @@ const PROGRESS_JOIN = `
  * saved. Either way it returns the local row id. Preserves user_rating.
  */
 export async function upsertTitle(
-  db: SQLiteDatabase,
+  db: Db,
   title: NewTitle
 ): Promise<number> {
   await db.runAsync(
@@ -94,7 +95,7 @@ export type LibraryFilter = {
 };
 
 export async function getLibrary(
-  db: SQLiteDatabase,
+  db: Db,
   filter: LibraryFilter = {}
 ): Promise<TitleWithProgress[]> {
   const where: string[] = [];
@@ -127,7 +128,7 @@ export async function getLibrary(
 }
 
 export async function getTitle(
-  db: SQLiteDatabase,
+  db: Db,
   id: number
 ): Promise<TitleWithProgress | null> {
   return db.getFirstAsync<TitleWithProgress>(
@@ -140,7 +141,7 @@ export async function getTitle(
 }
 
 export async function findTitleByTmdbId(
-  db: SQLiteDatabase,
+  db: Db,
   tmdbId: number,
   mediaType: MediaType
 ): Promise<Title | null> {
@@ -153,7 +154,7 @@ export async function findTitleByTmdbId(
 
 /** tmdb_id set of everything already in the library, for flagging search hits. */
 export async function getSavedTmdbIds(
-  db: SQLiteDatabase
+  db: Db
 ): Promise<Set<string>> {
   const rows = await db.getAllAsync<{ tmdb_id: number; media_type: MediaType }>(
     'SELECT tmdb_id, media_type FROM titles'
@@ -161,8 +162,67 @@ export async function getSavedTmdbIds(
   return new Set(rows.map((r) => `${r.media_type}:${r.tmdb_id}`));
 }
 
+export async function setAirInfo(
+  db: Db,
+  titleId: number,
+  info: AirInfo
+): Promise<void> {
+  await db.runAsync(
+    'UPDATE titles SET air_info = ?, air_checked_at = ? WHERE id = ?',
+    JSON.stringify(info),
+    new Date().toISOString(),
+    titleId
+  );
+}
+
+/** "Stopped watching" — the show stays in the library but leaves Home. */
+export async function setArchived(
+  db: Db,
+  titleId: number,
+  archived: boolean
+): Promise<void> {
+  await db.runAsync(
+    'UPDATE titles SET archived = ? WHERE id = ?',
+    archived ? 1 : 0,
+    titleId
+  );
+}
+
+export type HomeShow = TitleWithProgress & {
+  /** Furthest watched episode as `packEpisode(s, e)`, or null if none. */
+  furthest: number | null;
+};
+
+/** Shows still being followed, with how far you've got in each. */
+export async function getHomeShows(db: Db): Promise<HomeShow[]> {
+  return db.getAllAsync<HomeShow>(
+    `SELECT t.*, ${PROGRESS_COLUMNS}, f.furthest
+     FROM titles t
+     ${PROGRESS_JOIN}
+     LEFT JOIN (
+       SELECT title_id, MAX(season_number * 10000 + episode_number) AS furthest
+       FROM watch_entries
+       WHERE season_number > 0
+       GROUP BY title_id
+     ) f ON f.title_id = t.id
+     WHERE t.media_type = 'tv' AND t.archived = 0`
+  );
+}
+
+/** Dates a film already has a watch on, so a re-import doesn't double them. */
+export async function getWatchDates(
+  db: Db,
+  titleId: number
+): Promise<Set<string>> {
+  const rows = await db.getAllAsync<{ watched_on: string }>(
+    'SELECT watched_on FROM watch_entries WHERE title_id = ?',
+    titleId
+  );
+  return new Set(rows.map((r) => r.watched_on));
+}
+
 export async function setUserRating(
-  db: SQLiteDatabase,
+  db: Db,
   titleId: number,
   rating: number | null
 ): Promise<void> {
@@ -178,7 +238,7 @@ export async function setUserRating(
  * and its timestamp so "has a review" stays a single check.
  */
 export async function setReview(
-  db: SQLiteDatabase,
+  db: Db,
   titleId: number,
   review: string
 ): Promise<void> {
@@ -192,7 +252,7 @@ export async function setReview(
 }
 
 export async function deleteTitle(
-  db: SQLiteDatabase,
+  db: Db,
   titleId: number
 ): Promise<void> {
   // watch_entries cascade, but only when foreign keys are on for this connection.
@@ -205,7 +265,7 @@ export async function deleteTitle(
  * unique index makes it a no-op); movie rewatches insert a new row each time.
  */
 export async function logWatch(
-  db: SQLiteDatabase,
+  db: Db,
   entry: NewWatchEntry
 ): Promise<void> {
   await db.runAsync(
@@ -229,7 +289,7 @@ export async function logWatch(
 
 /** Logs many episodes in one transaction — used by "mark season watched". */
 export async function logEpisodes(
-  db: SQLiteDatabase,
+  db: Db,
   entries: NewWatchEntry[]
 ): Promise<void> {
   if (!entries.length) return;
@@ -241,7 +301,7 @@ export async function logEpisodes(
 }
 
 export async function unlogEpisode(
-  db: SQLiteDatabase,
+  db: Db,
   titleId: number,
   season: number,
   episode: number
@@ -256,14 +316,14 @@ export async function unlogEpisode(
 }
 
 export async function deleteEntry(
-  db: SQLiteDatabase,
+  db: Db,
   entryId: number
 ): Promise<void> {
   await db.runAsync('DELETE FROM watch_entries WHERE id = ?', entryId);
 }
 
 export async function getEntriesForTitle(
-  db: SQLiteDatabase,
+  db: Db,
   titleId: number
 ): Promise<WatchEntry[]> {
   return db.getAllAsync<WatchEntry>(
@@ -276,7 +336,7 @@ export async function getEntriesForTitle(
 
 /** `"S1E4"` keys for every logged episode of a show. */
 export async function getWatchedEpisodeKeys(
-  db: SQLiteDatabase,
+  db: Db,
   titleId: number
 ): Promise<Set<string>> {
   const rows = await db.getAllAsync<{
@@ -305,7 +365,7 @@ export type Stats = {
   topGenres: { genre: string; count: number }[];
 };
 
-export async function getStats(db: SQLiteDatabase): Promise<Stats> {
+export async function getStats(db: Db): Promise<Stats> {
   const counts = await db.getFirstAsync<{
     movies: number;
     shows: number;

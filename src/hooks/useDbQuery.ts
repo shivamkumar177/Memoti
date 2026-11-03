@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
-import { useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
 import { useCallback, useRef, useState } from 'react';
+
+import { useDb, type Db } from '../db/client';
 
 type Result<T> = {
   data: T | null;
@@ -15,10 +16,10 @@ type Result<T> = {
  * covers in-screen mutations.
  */
 export function useDbQuery<T>(
-  run: (db: SQLiteDatabase) => Promise<T>,
+  run: (db: Db) => Promise<T>,
   deps: readonly unknown[] = []
 ): Result<T> {
-  const db = useSQLiteContext();
+  const db = useDb();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
